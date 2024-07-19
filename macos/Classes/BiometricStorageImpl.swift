@@ -16,9 +16,11 @@ class InitOptions {
   init(params: [String: Any]) {
     authenticationValidityDurationSeconds = params["authenticationValidityDurationSeconds"] as? Int
     authenticationRequired = params["authenticationRequired"] as? Bool
+    authenticationDevicePinFallback = params["authenticationDevicePinFallback"] as? Bool ?? false
   }
   let authenticationValidityDurationSeconds: Int!
   let authenticationRequired: Bool!
+  let authenticationDevicePinFallback: Bool
 }
 
 class IOSPromptInfo {
@@ -179,7 +181,7 @@ class BiometricStorageFile {
       kSecAttrService as String: "flutter_biometric_storage",
       kSecAttrAccount as String: name,
     ] as [String : Any]
-    if initOptions.authenticationRequired {
+    if initOptions.authenticationRequired || initOptions.authenticationDevicePinFallback  {
       guard let access = accessControl(result) else {
         return nil
       }
@@ -192,18 +194,8 @@ class BiometricStorageFile {
   }
   
   private func accessControl(_ result: @escaping StorageCallback) -> SecAccessControl? {
-    let accessControlFlags: SecAccessControlCreateFlags
+    let accessControlFlags: SecAccessControlCreateFlags = initOptions.authenticationDevicePinFallback ? .userPresence : .biometryCurrentSet
     
-    if #available(iOS 11.3, *) {
-      accessControlFlags =  .biometryCurrentSet
-    } else {
-      accessControlFlags = .touchIDCurrentSet
-    }
-        
-//      access = SecAccessControlCreateWithFlags(nil,
-//                                               kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-//                                               accessControlFlags,
-//                                               &error)
     var error: Unmanaged<CFError>?
     guard let access = SecAccessControlCreateWithFlags(
       nil, // Use the default allocator.
@@ -289,7 +281,8 @@ class BiometricStorageFile {
       kSecValueData as String: content.data(using: String.Encoding.utf8) as Any,
     ]) { (_, new) in new }
     var status = SecItemAdd(query as CFDictionary, nil)
-    if (status == errSecDuplicateItem) {
+    
+    if (status == errSecDuplicateItem || initOptions.authenticationDevicePinFallback) {
       hpdebug("Value already exists. updating.")
       let update = [kSecValueData as String: query[kSecValueData as String]]
       query.removeValue(forKey: kSecValueData as String)
