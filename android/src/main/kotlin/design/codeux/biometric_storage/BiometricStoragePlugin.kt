@@ -244,9 +244,9 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
                     val options = call.argument<Map<String, Any>>("options")?.let { it ->
                         InitOptions(
-                            authenticationValidityDurationSeconds = it["authenticationValidityDurationSeconds"] as Int,
+                            authenticationValidityDurationSeconds = if (it["authenticationDevicePinFallback"] as? Boolean ?: false) 1 else it["authenticationValidityDurationSeconds"] as Int,
                             authenticationRequired = it["authenticationRequired"] as Boolean,
-                            androidBiometricOnly = it["androidBiometricOnly"] as Boolean,
+                            androidBiometricOnly = if (it["authenticationDevicePinFallback"] as? Boolean ?: false) false else it["androidBiometricOnly"] as Boolean,
                         )
                     } ?: InitOptions()
 //                    val options = moshi.adapter(InitOptions::class.java)

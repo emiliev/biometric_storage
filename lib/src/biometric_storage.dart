@@ -86,6 +86,7 @@ class StorageFileInitOptions {
     this.authenticationValidityDurationSeconds = -1,
     this.authenticationRequired = true,
     this.androidBiometricOnly = true,
+    this.authenticationDevicePinFallback = false,
   });
 
   final int authenticationValidityDurationSeconds;
@@ -105,11 +106,16 @@ class StorageFileInitOptions {
   /// https://github.com/authpass/biometric_storage/issues/12#issuecomment-902508609
   final bool androidBiometricOnly;
 
+  /// Whether to fallback to device PIN when Touch/Face ID is not recognized
+  /// or use device PIN directly if Touch/Face ID is disabled
+  final bool authenticationDevicePinFallback;
+
   Map<String, dynamic> toJson() => <String, dynamic>{
         'authenticationValidityDurationSeconds':
             authenticationValidityDurationSeconds,
         'authenticationRequired': authenticationRequired,
         'androidBiometricOnly': androidBiometricOnly,
+        'authenticationDevicePinFallback': authenticationDevicePinFallback,
       };
 }
 
