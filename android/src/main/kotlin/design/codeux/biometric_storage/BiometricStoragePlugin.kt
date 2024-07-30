@@ -180,9 +180,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     CipherMode.Decrypt -> cipherForDecrypt()
                 }
 
-                val cipher = if (options.authenticationValidityDurationSeconds > -1) {
-                    null
-                } else try {
+                val cipher = try {
                     cipherForMode()
                 } catch (e: KeyPermanentlyInvalidatedException) {
                     // TODO should we communicate this to the caller?
