@@ -247,7 +247,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                             // Change in authenticationValidityDurationSeconds to > 0 is needed when setting androidBiometricOnly to false 
                             //  https://github.com/authpass/biometric_storage/issues/12#issuecomment-902508609
                             //  https://pub.dev/documentation/biometric_storage/latest/biometric_storage/StorageFileInitOptions/androidBiometricOnly.html
-                            authenticationValidityDurationSeconds = if (it["authenticationDevicePinFallback"] as? Boolean ?: false) 1 else it["authenticationValidityDurationSeconds"] as Int,
+                            authenticationValidityDurationSeconds = -1,
                             authenticationRequired = it["authenticationRequired"] as Boolean,
                             androidBiometricOnly = if (it["authenticationDevicePinFallback"] as? Boolean ?: false) false else it["androidBiometricOnly"] as Boolean,
                         )

@@ -69,14 +69,6 @@ class BiometricStorageFile(
         fileV2 = File(baseDir, fileNameV2)
 
         logger.trace { "Initialized $this with $options" }
-
-        validateOptions()
-    }
-
-    private fun validateOptions() {
-        if (options.authenticationValidityDurationSeconds == -1 && !options.androidBiometricOnly) {
-            throw IllegalArgumentException("when authenticationValidityDurationSeconds is -1, androidBiometricOnly must be true")
-        }
     }
 
     fun cipherForEncrypt() = cryptographyManager.getInitializedCipherForEncryption(masterKeyName)
