@@ -188,7 +188,6 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     // TODO should we communicate this to the caller?
                     logger.warn(e) { "Key was invalidated. removing previous storage and recreating." }
                     deleteFile()
-                    // if deleting fails, simply throw the second time around.
                     cipherForMode()
                 }
 
@@ -200,7 +199,6 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                    } catch (e: UserNotAuthenticatedException) {
                        logger.debug(e) { "User requires (re)authentication. showing prompt ..." }
                    } catch (e: IllegalBlockSizeException) {
-                       resetStorage()
                        result.error(
                            "AuthError:${AuthenticationError.ResetBiometrics}",
                            "auth:trying to ask for a prompt with an invalid key",
@@ -216,7 +214,6 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                         cb(cipher)
                     } catch (ex: GeneralSecurityException) {
                     // trying to read/write to a file with an invalid keystore, must reset the biometrics
-                    resetStorage()
                     result.error(
                         "AuthError:${AuthenticationError.ResetBiometrics}",
                         "read/write:trying to read/write a file with an invalid key",
@@ -247,7 +244,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                             // Change in authenticationValidityDurationSeconds to > 0 is needed when setting androidBiometricOnly to false 
                             //  https://github.com/authpass/biometric_storage/issues/12#issuecomment-902508609
                             //  https://pub.dev/documentation/biometric_storage/latest/biometric_storage/StorageFileInitOptions/androidBiometricOnly.html
-                            authenticationValidityDurationSeconds = -1,
+                            authenticationValidityDurationSeconds = if (it["authenticationDevicePinFallback"] as? Boolean ?: false) 1 else it["authenticationValidityDurationSeconds"] as Int,
                             authenticationRequired = it["authenticationRequired"] as Boolean,
                             androidBiometricOnly = if (it["authenticationDevicePinFallback"] as? Boolean ?: false) false else it["androidBiometricOnly"] as Boolean,
                         )
@@ -336,7 +333,6 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         } catch (e: Throwable) {
             logger.error(e) { "Error while calling UI callback. This must not happen." }
             // something really bad happened, should reset the biometrics
-            resetStorage()
             onError(
                 AuthenticationErrorInfo(
                     AuthenticationError.ResetBiometrics,
@@ -356,7 +352,6 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         } catch (e: Throwable) {
             logger.error(e) { "Error while calling worker callback. This must not happen." }
             // something really bad happened, should reset the biometrics
-            resetStorage()
             handler.post {
                 onError(
                     AuthenticationErrorInfo(
@@ -418,6 +413,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
                 @WorkerThread
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                    logger.trace("onAuthenticationSucceeded($result)")
                     logger.trace("onAuthenticationSucceeded($result)")
                     worker(onError) { onSuccess(result.cryptoObject?.cipher) }
                 }
