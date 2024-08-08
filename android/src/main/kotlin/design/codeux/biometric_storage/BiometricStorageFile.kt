@@ -44,14 +44,14 @@ class BiometricStorageFile(
             setIsStrongBoxBacked(useStrongBox)
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (options.authenticationValidityDurationSeconds == -1) {
+            if (options.androidBiometricOnly) {
                 setUserAuthenticationParameters(
                     0,
                     KeyProperties.AUTH_BIOMETRIC_STRONG
                 )
             } else {
                 setUserAuthenticationParameters(
-                    options.authenticationValidityDurationSeconds,
+                    0,
                     KeyProperties.AUTH_DEVICE_CREDENTIAL or KeyProperties.AUTH_BIOMETRIC_STRONG
                 )
             }

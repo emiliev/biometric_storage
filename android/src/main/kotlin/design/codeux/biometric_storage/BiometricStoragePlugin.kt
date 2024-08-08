@@ -21,8 +21,6 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import java.security.GeneralSecurityException
 import java.security.InvalidKeyException
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 import javax.crypto.Cipher
 import javax.crypto.IllegalBlockSizeException
 
@@ -102,10 +100,6 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     }
 
-    private val executor: ExecutorService by lazy { Executors.newSingleThreadExecutor() }
-    private val handler: Handler by lazy { Handler(Looper.getMainLooper()) }
-
-
     private var attachedActivity: FragmentActivity? = null
 
     private val storageFiles = mutableMapOf<String, BiometricStorageFile>()
@@ -120,9 +114,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         channel.setMethodCallHandler(this)
     }
 
-    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-        executor.shutdown()
-    }
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) { }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         logger.trace { "onMethodCall(${call.method})" }
@@ -166,10 +158,9 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
             }
 
-            @UiThread
             fun BiometricStorageFile.withAuth(
                 mode: CipherMode,
-                @WorkerThread cb: BiometricStorageFile.(cipher: Cipher?) -> Unit
+                cb: BiometricStorageFile.(cipher: Cipher?) -> Unit
             ) {
                 if (!options.authenticationRequired) {
                     return cb(null)
@@ -241,17 +232,10 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
                     val options = call.argument<Map<String, Any>>("options")?.let { it ->
                         InitOptions(
-                            // Change in authenticationValidityDurationSeconds to > 0 is needed when setting androidBiometricOnly to false 
-                            //  https://github.com/authpass/biometric_storage/issues/12#issuecomment-902508609
-                            //  https://pub.dev/documentation/biometric_storage/latest/biometric_storage/StorageFileInitOptions/androidBiometricOnly.html
-                            authenticationValidityDurationSeconds = if (it["authenticationDevicePinFallback"] as? Boolean ?: false) 1 else it["authenticationValidityDurationSeconds"] as Int,
                             authenticationRequired = it["authenticationRequired"] as Boolean,
                             androidBiometricOnly = if (it["authenticationDevicePinFallback"] as? Boolean ?: false) false else it["androidBiometricOnly"] as Boolean,
                         )
                     } ?: InitOptions()
-//                    val options = moshi.adapter(InitOptions::class.java)
-//                        .fromJsonValue(call.argument("options") ?: emptyMap<String, Any>())
-//                        ?: InitOptions()
                     storageFiles[name] = BiometricStorageFile(applicationContext, name, options)
                     result.success(true)
                 }
@@ -323,11 +307,10 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         storageFiles.clear()
     }
 
-    @AnyThread
     private inline fun ui(
-        @UiThread crossinline onError: ErrorCallback,
-        @UiThread crossinline cb: () -> Unit
-    ) = handler.post {
+        crossinline onError: ErrorCallback,
+        crossinline cb: () -> Unit
+    ) {
         try {
             cb()
         } catch (e: Throwable) {
@@ -344,23 +327,21 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     }
 
     private inline fun worker(
-        @UiThread crossinline onError: ErrorCallback,
-        @WorkerThread crossinline cb: () -> Unit
-    ) = executor.submit {
+        crossinline onError: ErrorCallback,
+        crossinline cb: () -> Unit
+    ) {
         try {
             cb()
         } catch (e: Throwable) {
             logger.error(e) { "Error while calling worker callback. This must not happen." }
             // something really bad happened, should reset the biometrics
-            handler.post {
-                onError(
-                    AuthenticationErrorInfo(
-                        AuthenticationError.ResetBiometrics,
-                        "Unexpected authentication error. ${e.localizedMessage}",
-                        e
-                    )
+            onError(
+                AuthenticationErrorInfo(
+                    AuthenticationError.ResetBiometrics,
+                    "Unexpected authentication error. ${e.localizedMessage}",
+                    e
                 )
-            }
+            )
         }
     }
 
@@ -378,12 +359,11 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             )
     }
 
-    @UiThread
     private fun authenticate(
         cipher: Cipher?,
         promptInfo: AndroidPromptInfo,
         options: InitOptions,
-        @WorkerThread onSuccess: (cipher: Cipher?) -> Unit,
+        onSuccess: (cipher: Cipher?) -> Unit,
         onError: ErrorCallback
     ) {
         logger.trace("authenticate()")
@@ -397,7 +377,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             )
         }
         val prompt =
-            BiometricPrompt(activity, executor, object : BiometricPrompt.AuthenticationCallback() {
+            BiometricPrompt(activity, object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     logger.trace("onAuthenticationError($errorCode, $errString)")
                     ui(onError) {
@@ -411,9 +391,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     }
                 }
 
-                @WorkerThread
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    logger.trace("onAuthenticationSucceeded($result)")
                     logger.trace("onAuthenticationSucceeded($result)")
                     worker(onError) { onSuccess(result.cryptoObject?.cipher) }
                 }
