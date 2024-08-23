@@ -207,8 +207,8 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     // trying to read/write to a file with an invalid keystore, must reset the biometrics
                     result.error(
                         "AuthError:${AuthenticationError.ResetBiometrics}",
-                        "read/write:trying to read/write a file with an invalid key",
-                        "read/write:trying to read/write a file with an invalid key"
+                        ex.toCompleteString(),
+                        ex.message
                     )
                 }
                 }, onError = resultError)
