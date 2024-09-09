@@ -81,6 +81,8 @@ class BiometricStorageImpl {
       canAuthenticate(result: result)
     } else if ("hasAuthMechanism") {
         result(true)
+    } else if ("setLogger") {
+        return //TODO: Add swift logger
     } else if ("init" == call.method) {
       requiredArg("name") { name in
         requiredArg("options") { options in
