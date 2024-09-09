@@ -131,4 +131,7 @@ class Win32BiometricStoragePlugin extends BiometricStorage {
       _logger.fine('free done');
     }
   }
+
+  @override
+  Future<bool> hasAuthMechanism() async => false;
 }
