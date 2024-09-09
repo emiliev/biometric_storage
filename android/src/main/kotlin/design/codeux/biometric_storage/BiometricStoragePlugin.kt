@@ -108,8 +108,8 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     private lateinit var applicationContext: Context
 
-    private isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
-    private isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+    private val isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
+    private val isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         this.applicationContext = binding.applicationContext
