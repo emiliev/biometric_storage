@@ -207,8 +207,8 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     // trying to read/write to a file with an invalid keystore, must reset the biometrics
                     result.error(
                         "AuthError:${AuthenticationError.ResetBiometrics}",
-                        "read/write:trying to read/write a file with an invalid key",
-                        "read/write:trying to read/write a file with an invalid key"
+                        ex.toCompleteString(),
+                        ex.message
                     )
                 }
                 }, onError = resultError)
@@ -408,19 +408,19 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             .setDescription(promptInfo.description)
             .setConfirmationRequired(promptInfo.confirmationRequired)
 
-        val biometricOnly =
-            options.androidBiometricOnly || Build.VERSION.SDK_INT < Build.VERSION_CODES.R
+        val isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
+        val isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+        val biometricOnly = options.androidBiometricOnly
 
         if (biometricOnly) {
-            if (!options.androidBiometricOnly) {
-                logger.debug {
-                    "androidBiometricOnly was false, but prior " +
-                    "to ${Build.VERSION_CODES.R} this was not supported. ignoring."
-                }
+            promptBuilder.apply {
+                setAllowedAuthenticators(BIOMETRIC_STRONG)
+                setNegativeButtonText(promptInfo.negativeButton)
             }
-            promptBuilder
-                .setAllowedAuthenticators(BIOMETRIC_STRONG)
-                .setNegativeButtonText(promptInfo.negativeButton)
+        } else if (isAndroidQ) {
+            promptBuilder.setDeviceCredentialAllowed(true)
+        } else if (isDeprecatedVersion) {
+            // Do nothing
         } else {
             promptBuilder.setAllowedAuthenticators(DEVICE_CREDENTIAL or BIOMETRIC_STRONG)
         }
