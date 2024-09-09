@@ -363,7 +363,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             )
     }
 
-    private fun hasAuthMechanism(): bool {
+    private fun hasAuthMechanism(): Boolean {
         val result = when {
             isAndroidQ -> biometricManager.canAuthenticate()
             isDeprecatedVersion -> BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
