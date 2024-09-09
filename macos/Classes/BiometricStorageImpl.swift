@@ -79,6 +79,8 @@ class BiometricStorageImpl {
     
     if ("canAuthenticate" == call.method) {
       canAuthenticate(result: result)
+    } else if ("hasAuthMechanism") {
+        result(true)
     } else if ("init" == call.method) {
       requiredArg("name") { name in
         requiredArg("options") { options in
