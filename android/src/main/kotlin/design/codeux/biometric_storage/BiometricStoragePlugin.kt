@@ -108,7 +108,6 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     private val biometricManager by lazy { BiometricManager.from(applicationContext) }
 
     private lateinit var applicationContext: Context
-    private lateinit val deviceAuthManager = DeviceAuthManager(attachedActivity!)
 
     private val isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
     private val isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
