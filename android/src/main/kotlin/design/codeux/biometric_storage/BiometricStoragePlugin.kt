@@ -1,6 +1,7 @@
 package design.codeux.biometric_storage
 
 import android.app.Activity
+import android.app.KeyguardManager
 import android.content.Context
 import android.os.*
 import android.security.keystore.KeyPermanentlyInvalidatedException
@@ -369,9 +370,8 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             val legacyAuthResp = isAndroidQ ?  biometricManager.canAuthenticate() : BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
 
             if (legacyAuthResp?.code != BiometricManager.BIOMETRIC_SUCCESS) {
-                val deviceAuthManager = DeviceAuthManager(attachedActivity!)
-                val isDeviceSecure = deviceAuthManager.isDeviceSecure()
-                return isDeviceSecure;
+                val keyguardManager = attachedActivity?.getSystemService(KeyguardManager::class.java)
+                return keyguardManager?.isDeviceSecure() ?? false;
             }
 
             return true
