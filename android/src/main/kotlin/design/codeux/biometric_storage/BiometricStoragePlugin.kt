@@ -107,6 +107,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     private val biometricManager by lazy { BiometricManager.from(applicationContext) }
 
     private lateinit var applicationContext: Context
+    private lateinit val deviceAuthManager = DeviceAuthManager(attachedActivity!)
 
     private val isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
     private val isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
@@ -364,14 +365,20 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     }
 
     private fun hasAuthMechanism(): Boolean {
-        val result = when {
-            isAndroidQ -> biometricManager.canAuthenticate()
-            isDeprecatedVersion -> BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
-            else -> biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+        if (isDeprecatedVersion || isAndroidQ) {
+            val legacyAuthResp = isAndroidQ ?  biometricManager.canAuthenticate() : BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
+
+            if (legacyAuthResp?.code != BiometricManager.BIOMETRIC_SUCCESS) {
+                val deviceAuthManager = DeviceAuthManager(attachedActivity!)
+                val isDeviceSecure = deviceAuthManager.isDeviceSecure()
+                return isDeviceSecure;
+            }
+
+            return true
         }
 
+        val result = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
         val response = CanAuthenticateResponse.values().firstOrNull { it.code == result }
-
         return response?.code == BiometricManager.BIOMETRIC_SUCCESS
     }
 
