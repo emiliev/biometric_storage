@@ -108,6 +108,9 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     private lateinit var applicationContext: Context
 
+    private isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
+    private isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
+
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         this.applicationContext = binding.applicationContext
         val channel = MethodChannel(binding.binaryMessenger, "biometric_storage")
@@ -216,6 +219,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
             when (call.method) {
                 "canAuthenticate" -> result.success(canAuthenticate().name)
+                "hasAuthMechanism" -> result.success(hasAuthMechanism())
                 "init" -> {
                     val name = getName()
                     if (storageFiles.containsKey(name)) {
@@ -359,6 +363,18 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             )
     }
 
+    private fun hasAuthMechanism(): bool {
+        val result = when {
+            isAndroidQ -> biometricManager.canAuthenticate()
+            isDeprecatedVersion -> BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
+            else -> biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+        }
+
+        val response = CanAuthenticateResponse.values().firstOrNull { it.code == result }
+
+        return response?.code == BiometricManager.BIOMETRIC_SUCCESS
+    }
+
     private fun authenticate(
         cipher: Cipher?,
         promptInfo: AndroidPromptInfo,
@@ -408,8 +424,6 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             .setDescription(promptInfo.description)
             .setConfirmationRequired(promptInfo.confirmationRequired)
 
-        val isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
-        val isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
         val biometricOnly = options.androidBiometricOnly
 
         if (biometricOnly) {

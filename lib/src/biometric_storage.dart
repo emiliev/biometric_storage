@@ -204,6 +204,8 @@ abstract class BiometricStorage extends PlatformInterface {
   /// the reason [CanAuthenticateResponse] why it is not supported.
   Future<CanAuthenticateResponse> canAuthenticate();
 
+  Future<bool> hasAuthMechanism();
+
   /// Returns true when there is an AppArmor error when trying to read a value.
   ///
   /// When used inside a snap, there might be app armor limitations
@@ -432,6 +434,13 @@ class MethodChannelBiometricStorage extends BiometricStorage {
         }
         return Future<T>.error(error, stackTrace);
       });
+
+  @override
+  Future<bool> hasAuthMechanism() async {
+    final response =
+        await _channel.invokeMethod<bool>('hasAuthMechanism') ?? false;
+    return response;
+  }
 }
 
 class BiometricStorageFile {
