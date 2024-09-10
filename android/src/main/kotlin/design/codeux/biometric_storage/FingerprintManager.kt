@@ -1,3 +1,5 @@
+package design.codeux.biometric_storage
+
 import android.content.Context
 import android.os.Build
 import androidx.core.hardware.fingerprint.FingerprintManagerCompat

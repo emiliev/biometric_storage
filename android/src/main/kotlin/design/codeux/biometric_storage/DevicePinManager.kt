@@ -1,8 +1,11 @@
+package design.codeux.biometric_storage
+
 import android.app.Activity
 import android.app.KeyguardManager
 import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
+import javax.crypto.Cipher
 
 class DevicePinManager(private val activity: Activity) {
 

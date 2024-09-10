@@ -1,3 +1,5 @@
+package design.codeux.biometric_storage
+
 class LegacyHandler(
     private val context: Context,
     private val activity: Activity

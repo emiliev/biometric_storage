@@ -1,7 +1,9 @@
 package design.codeux.biometric_storage
 
 import android.app.Activity
+import android.app.KeyguardManager
 import android.content.Context
+import android.content.Intent
 import android.os.*
 import android.security.keystore.KeyPermanentlyInvalidatedException
 import android.security.keystore.UserNotAuthenticatedException
@@ -16,6 +18,7 @@ import io.flutter.embedding.engine.plugins.activity.*
 import io.flutter.plugin.common.*
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import io.flutter.plugin.common.PluginRegistry.ActivityResultListener
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -90,7 +93,7 @@ private fun Throwable.toCompleteString(): String {
     return "$this\n$out"
 }
 
-class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
+class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, ActivityResultListener {
 
     companion object {
         const val PARAM_NAME = "name"
@@ -109,7 +112,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     private lateinit var channel: MethodChannel
     private lateinit var logger: CustomLogger
-    private val legayHandler by lazy { LegacyHandler(applicationContext, attachedActivity!!) }
+    private val legacyHandler: LegacyHandler by lazy { LegacyHandler(applicationContext, attachedActivity!!) }
 
     private val isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
     private val isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
@@ -312,7 +315,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        legayHandler.handleAuthenticationResult(requestCode, resultCode)
+        legacyHandler.handleAuthenticationResult(requestCode, resultCode)
     }
 
     private fun resetStorage() {
@@ -430,7 +433,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         onSuccess: (cipher: Cipher?) -> Unit,
         onError: ErrorCallback
     ) {
-        legayHandler.authenticate(onSuccess, onError, cipher, promptInfo)
+        legacyHandler.authenticate(onSuccess, onError, cipher, promptInfo)
     }
 
     private fun authenticate(
@@ -524,17 +527,8 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             return
         }
         attachedActivity = activity
-        legayHandler = LegacyHandler()
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
     }
 }
-
-data class AndroidPromptInfo(
-    val title: String,
-    val subtitle: String?,
-    val description: String?,
-    val negativeButton: String,
-    val confirmationRequired: Boolean
-)
