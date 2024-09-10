@@ -435,15 +435,14 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             .setDescription(promptInfo.description)
             .setConfirmationRequired(promptInfo.confirmationRequired)
 
-        val biometricOnly = options.androidBiometricOnly
+        val biometricOnly =
+                options.androidBiometricOnly || Build.VERSION.SDK_INT < Build.VERSION_CODES.R
 
-        if (biometricOnly && Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+        if (biometricOnly) {
             promptBuilder.apply {
                 setAllowedAuthenticators(BIOMETRIC_STRONG)
                 setNegativeButtonText(promptInfo.negativeButton)
             }
-        } else if (isAndroidQ) {
-            promptBuilder.setDeviceCredentialAllowed(true)
         } else if (isDeprecatedVersion) {
             // Do nothing
         } else {
