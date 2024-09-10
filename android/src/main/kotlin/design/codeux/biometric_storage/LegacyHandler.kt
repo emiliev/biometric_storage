@@ -19,7 +19,7 @@ class LegacyHandler(
                     devicePinManager.authenticate(
                             onSuccess,
                             { onFailure("Authentication failed: $error") },
-                            promptInfo: promptInfo)
+                            promptInfo)
             })
     }
 }
