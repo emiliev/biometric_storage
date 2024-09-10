@@ -318,7 +318,6 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        super.onActivityResult(requestCode, resultCode, data)
         legacyHandler.handleAuthenticationResult(requestCode, resultCode)
         return true
     }
