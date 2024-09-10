@@ -19,6 +19,7 @@ import io.flutter.plugin.common.*
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.ActivityResultListener
+
 import io.github.oshai.kotlinlogging.KotlinLogging
 import java.io.PrintWriter
 import java.io.StringWriter
@@ -93,7 +94,7 @@ private fun Throwable.toCompleteString(): String {
     return "$this\n$out"
 }
 
-class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, ActivityResultListener {
+class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, PluginRegistry.ActivityResultListener {
 
     companion object {
         const val PARAM_NAME = "name"
@@ -313,9 +314,10 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         super.onActivityResult(requestCode, resultCode, data)
         legacyHandler.handleAuthenticationResult(requestCode, resultCode)
+        return true
     }
 
     private fun resetStorage() {
@@ -413,7 +415,6 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
         return true;
     }
 
-
     private fun auth(
         cipher: Cipher?,
         promptInfo: AndroidPromptInfo,
@@ -433,7 +434,11 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
         onSuccess: (cipher: Cipher?) -> Unit,
         onError: ErrorCallback
     ) {
-        legacyHandler.authenticate(onSuccess, onError, cipher, promptInfo)
+        legacyHandler.authenticate(onSuccess,
+            { error -> onError(AuthenticationErrorInfo(AuthenticationError.Failed, error) },
+            cipher,
+            promptInfo
+        )
     }
 
     private fun authenticate(

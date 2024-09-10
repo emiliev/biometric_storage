@@ -30,6 +30,6 @@ class LegacyHandler(
     }
 
     fun handleAuthenticationResult(requestCode: Int, resultCode: Int) {
-        devicePinManager(requestCode, resultCode)
+        devicePinManager.handleAuthenticationResult(requestCode, resultCode)
     }
 }
