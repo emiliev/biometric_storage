@@ -22,7 +22,7 @@ class FingerprintManager(
             cancellationSignal = CancellationSignal()
 
             if (fingerprintManager.isHardwareDetected && fingerprintManager.hasEnrolledFingerprints()) {
-                val cryptoObject = FingerprintManagerCompat.CryptoObject(cipher)
+                val cryptoObject = FingerprintManagerCompat.CryptoObject(cipher!!)
                 fingerprintManager.authenticate(
                         cryptoObject,
                         0,
