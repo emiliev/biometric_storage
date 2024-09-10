@@ -435,7 +435,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
         onError: ErrorCallback
     ) {
         legacyHandler.authenticate(onSuccess,
-            { error -> onError(AuthenticationErrorInfo(AuthenticationError.Failed, error) },
+            { error -> onError(AuthenticationErrorInfo(AuthenticationError.Failed, error)) },
             cipher,
             promptInfo
         )
