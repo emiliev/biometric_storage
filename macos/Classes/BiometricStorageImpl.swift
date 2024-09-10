@@ -32,10 +32,6 @@ class IOSPromptInfo {
   let accessTitle: String!
 }
 
-private func hpdebug(_ message: String) {
-  print(message);
-}
-
 class BiometricStorageImpl {
   
   init(storageError: @escaping StorageError, storageMethodNotImplemented: Any) {
@@ -79,7 +75,7 @@ class BiometricStorageImpl {
     
     if ("canAuthenticate" == call.method) {
       canAuthenticate(result: result)
-    } else if ("hasAuthMechanism") {
+    } else if ("hasAuthMechanism" == call.method) {
         result(true)
     } else if ("init" == call.method) {
       requiredArg("name") { name in

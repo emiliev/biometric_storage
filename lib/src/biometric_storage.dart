@@ -206,6 +206,8 @@ abstract class BiometricStorage extends PlatformInterface {
 
   Future<bool> hasAuthMechanism();
 
+  void setLogger(void Function(String) logger);
+
   /// Returns true when there is an AppArmor error when trying to read a value.
   ///
   /// When used inside a snap, there might be app armor limitations
@@ -440,6 +442,15 @@ class MethodChannelBiometricStorage extends BiometricStorage {
     final response =
         await _channel.invokeMethod<bool>('hasAuthMechanism') ?? false;
     return response;
+  }
+
+  @override
+  void setLogger(void Function(String) logger) {
+    _channel.setMethodCallHandler((e) async {
+      if (e.method == 'log') {
+        logger(e.arguments as String);
+      }
+    });
   }
 }
 

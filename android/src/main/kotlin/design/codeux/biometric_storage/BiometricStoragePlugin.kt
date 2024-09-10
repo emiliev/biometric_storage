@@ -24,7 +24,6 @@ import java.security.InvalidKeyException
 import javax.crypto.Cipher
 import javax.crypto.IllegalBlockSizeException
 
-private val logger = KotlinLogging.logger {}
 
 enum class CipherMode {
     Encrypt,
@@ -108,19 +107,23 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     private lateinit var applicationContext: Context
 
+    private lateinit var channel: MethodChannel
+    private lateinit var logger: CustomLogger
+
     private val isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
     private val isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         this.applicationContext = binding.applicationContext
-        val channel = MethodChannel(binding.binaryMessenger, "biometric_storage")
+        channel = MethodChannel(binding.binaryMessenger, "biometric_storage")
         channel.setMethodCallHandler(this)
+        logger = CustomLogger(channel)
     }
 
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) { }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
-        logger.trace { "onMethodCall(${call.method})" }
+        logger.trace("onMethodCall(${call.method})");
         try {
             fun <T> requiredArgument(name: String) =
                 call.argument<T>(name) ?: throw MethodCallException(
@@ -145,7 +148,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             fun withStorage(cb: BiometricStorageFile.() -> Unit) {
                 val name = getName()
                 storageFiles[name]?.apply(cb) ?: run {
-                    logger.warn { "User tried to access storage '$name', before initialization" }
+                    logger.warn("User tried to access storage '$name', before initialization");
                     result.error("Storage $name was not initialized.", null, null)
                     return
                 }
@@ -180,7 +183,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                     cipherForMode()
                 } catch (e: KeyPermanentlyInvalidatedException) {
                     // TODO should we communicate this to the caller?
-                    logger.warn(e) { "Key was invalidated. removing previous storage and recreating." }
+                    logger.warn("Key was invalidated. removing previous storage and recreating.")
                     deleteFile()
                     cipherForMode()
                 }
@@ -191,7 +194,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                    try {
                        return cb(null)
                    } catch (e: UserNotAuthenticatedException) {
-                       logger.debug(e) { "User requires (re)authentication. showing prompt ..." }
+                       logger.debug("User requires (re)authentication. showing prompt ...")
                    } catch (e: IllegalBlockSizeException) {
                        result.error(
                            "AuthError:${AuthenticationError.ResetBiometrics}",
@@ -290,7 +293,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                 else -> result.notImplemented()
             }
         } catch (e: MethodCallException) {
-            logger.error(e) { "Error while processing method call ${call.method}" }
+            logger.error("Error while processing method call ${call.method}")
             result.error(e.errorCode, e.errorMessage, e.errorDetails)
         } catch (e: InvalidKeyException) {
             // something wrong with the keystore, reset the biometrics
@@ -301,7 +304,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                 e.toCompleteString()
             )
         } catch (e: Exception) {
-            logger.error(e) { "Error while processing method call '${call.method}'" }
+            logger.error("Error while processing method call '${call.method}'")
             result.error("Unexpected Error", e.message, e.toCompleteString())
         }
     }
@@ -318,7 +321,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         try {
             cb()
         } catch (e: Throwable) {
-            logger.error(e) { "Error while calling UI callback. This must not happen." }
+            logger.error("Error while calling UI callback. This must not happen." )
             // something really bad happened, should reset the biometrics
             onError(
                 AuthenticationErrorInfo(
@@ -337,7 +340,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         try {
             cb()
         } catch (e: Throwable) {
-            logger.error(e) { "Error while calling worker callback. This must not happen." }
+            logger.error("Error while calling worker callback. This must not happen.")
             // something really bad happened, should reset the biometrics
             onError(
                 AuthenticationErrorInfo(
@@ -364,15 +367,23 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     }
 
     private fun hasAuthMechanism(): Boolean {
+        logger.trace("hasAuthMechanism()")
         val result = when {
             isAndroidQ -> biometricManager.canAuthenticate()
             isDeprecatedVersion -> BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
             else -> biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
         }
 
+        logger.trace("hasAuthMechanism() result $result")
+
         val response = CanAuthenticateResponse.values().firstOrNull { it.code == result }
 
-        return response?.code == BiometricManager.BIOMETRIC_SUCCESS
+        logger.trace("hasAuthMechanism() response $response")
+
+        val isSuccess = response?.code == BiometricManager.BIOMETRIC_SUCCESS
+        logger.trace("hasAuthMechanism() response is success $isSuccess")
+
+        return isSuccess
     }
 
     private fun authenticate(
@@ -384,7 +395,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     ) {
         logger.trace("authenticate()")
         val activity = attachedActivity ?: return run {
-            logger.error { "We are not attached to an activity." }
+            logger.error("We are not attached to an activity.")
             onError(
                 AuthenticationErrorInfo(
                     AuthenticationError.Failed,
@@ -424,15 +435,14 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             .setDescription(promptInfo.description)
             .setConfirmationRequired(promptInfo.confirmationRequired)
 
-        val biometricOnly = options.androidBiometricOnly
+        val biometricOnly =
+                options.androidBiometricOnly || Build.VERSION.SDK_INT < Build.VERSION_CODES.R
 
         if (biometricOnly) {
             promptBuilder.apply {
                 setAllowedAuthenticators(BIOMETRIC_STRONG)
                 setNegativeButtonText(promptInfo.negativeButton)
             }
-        } else if (isAndroidQ) {
-            promptBuilder.setDeviceCredentialAllowed(true)
         } else if (isDeprecatedVersion) {
             // Do nothing
         } else {
@@ -441,7 +451,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
         if (cipher == null || options.authenticationValidityDurationSeconds >= 0) {
             // if authenticationValidityDurationSeconds is not -1 we can't use a CryptoObject
-            logger.debug { "Authenticating without cipher. ${options.authenticationValidityDurationSeconds}" }
+            logger.debug("Authenticating without cipher. ${options.authenticationValidityDurationSeconds}")
             prompt.authenticate(promptBuilder.build())
         } else {
             prompt.authenticate(promptBuilder.build(), BiometricPrompt.CryptoObject(cipher))
@@ -449,7 +459,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     }
 
     override fun onDetachedFromActivity() {
-        logger.trace { "onDetachedFromActivity" }
+        logger.debug("onDetachedFromActivity")
         attachedActivity = null
     }
 
@@ -457,13 +467,13 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
-        logger.debug { "Attached to new activity." }
+        logger.debug("Attached to new activity.")
         updateAttachedActivity(binding.activity)
     }
 
     private fun updateAttachedActivity(activity: Activity) {
         if (activity !is FragmentActivity) {
-            logger.error { "Got attached to activity which is not a FragmentActivity: $activity" }
+            logger.error("Got attached to activity which is not a FragmentActivity: $activity")
             return
         }
         attachedActivity = activity
