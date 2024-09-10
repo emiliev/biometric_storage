@@ -1,8 +1,6 @@
 package design.codeux.biometric_storage
 
 import android.app.Activity
-import android.app.KeyguardManager
-import android.util.Log
 import android.content.Context
 import android.os.*
 import android.security.keystore.KeyPermanentlyInvalidatedException
@@ -370,26 +368,22 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     private fun hasAuthMechanism(): Boolean {
         logger.trace("hasAuthMechanism()")
-        if (isDeprecatedVersion || isAndroidQ) {
-            logger.trace("hasAuthMechanism() android sdk is ${Build.VERSION.SDK_INT}")
-            val legacyAuthResp = if(isAndroidQ) biometricManager.canAuthenticate(BIOMETRIC_STRONG) else BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
-            logger.trace("hasAuthMechanism() authentication response is $legacyAuthResp")
-
-            if (legacyAuthResp != BiometricManager.BIOMETRIC_SUCCESS) {
-                logger.trace("hasAuthMechanism() authentication response not success. Checking keyguardManager  isDeviceSecure")
-                val keyguardManager = attachedActivity?.getSystemService(KeyguardManager::class.java)
-                val isDeviceSecure = keyguardManager?.isDeviceSecure() ?: false;
-                logger.trace("hasAuthMechanism()  keyguardManager  isDeviceSecure: $isDeviceSecure")
-                return isDeviceSecure;
-            }
-
-            return true
+        val result = when {
+            isAndroidQ -> biometricManager.canAuthenticate()
+            isDeprecatedVersion -> BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
+            else -> biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
         }
 
-        logger.trace("hasAuthMechanism() android device is 11+")
-        val result = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+        logger.trace("hasAuthMechanism() result $result")
+
         val response = CanAuthenticateResponse.values().firstOrNull { it.code == result }
-        return response?.code == BiometricManager.BIOMETRIC_SUCCESS
+
+        logger.trace("hasAuthMechanism() response $response")
+
+        val isSuccess = response?.code == BiometricManager.BIOMETRIC_SUCCESS
+        logger.trace("hasAuthMechanism() response is success $isSuccess")
+
+        return isSuccess
     }
 
     private fun authenticate(
