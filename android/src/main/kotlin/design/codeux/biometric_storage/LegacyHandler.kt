@@ -1,5 +1,9 @@
 package design.codeux.biometric_storage
 
+import android.app.Activity
+import android.content.Context
+import javax.crypto.Cipher
+
 class LegacyHandler(
     private val context: Context,
     private val activity: Activity
