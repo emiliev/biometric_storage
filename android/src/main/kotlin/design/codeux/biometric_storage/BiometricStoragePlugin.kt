@@ -437,7 +437,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
         val biometricOnly = options.androidBiometricOnly
 
-        if (biometricOnly) {
+        if (biometricOnly && Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
             promptBuilder.apply {
                 setAllowedAuthenticators(BIOMETRIC_STRONG)
                 setNegativeButtonText(promptInfo.negativeButton)
