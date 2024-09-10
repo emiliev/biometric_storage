@@ -11,7 +11,7 @@ class FingerprintManager(
     private var cancellationSignal: CancellationSignal? = null
     private lateinit var fingerprintManager: FingerprintManagerCompat
 
-    fun authenticate(cipher: Cipher,
+    fun authenticate(cipher: Cipher?,
                      onSuccess: (cipher: Cipher?) -> Unit,
                      onFailure: (error: String) -> Unit
     ) {

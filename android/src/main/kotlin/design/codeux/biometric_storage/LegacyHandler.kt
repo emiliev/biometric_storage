@@ -8,7 +8,7 @@ class LegacyHandler(
     fun authenticate(
         onSuccess: (cipher: Cipher?) -> Unit,
         onFailure: (error: String) -> Unit,
-        cipher: Cipher,
+        cipher: Cipher?,
         promptInfo: AndroidPromptInfo
     ) {
         fingerprintManager.authenticate(
@@ -21,5 +21,9 @@ class LegacyHandler(
                             { onFailure("Authentication failed: $error") },
                             promptInfo)
             })
+    }
+
+    fun handleAuthenticationResult(requestCode: Int, resultCode: Int) {
+        devicePinManager(requestCode, resultCode)
     }
 }

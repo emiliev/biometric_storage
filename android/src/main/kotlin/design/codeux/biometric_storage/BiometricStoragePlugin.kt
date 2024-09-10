@@ -109,7 +109,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     private lateinit var channel: MethodChannel
     private lateinit var logger: CustomLogger
-    private lateinit var legayHandler: LegacyHandler
+    private val legayHandler by lazy { LegacyHandler(applicationContext, attachedActivity!) }
 
     private val isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
     private val isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
@@ -207,7 +207,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
                }
 
                 val promptInfo = getAndroidPromptInfo()
-                authenticate(cipher, promptInfo, options, {
+                auth(cipher, promptInfo, options, {
                     try {
                         cb(cipher)
                     } catch (ex: GeneralSecurityException) {
@@ -312,11 +312,8 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        deviceAuthManager.handleAuthenticationResult(requestCode, resultCode, {
-            // Success
-        }, {
-            // Failure
-        })}
+        legayHandler.handleAuthenticationResult(requestCode, resultCode)
+    }
 
     private fun resetStorage() {
         storageFiles.values.forEach { it.deleteFile() }
@@ -377,7 +374,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     private fun hasAuthMechanism(): Boolean {
         logger.trace("hasAuthMechanism()")
-        if (isAndroidQ || isDeprecatedVersion){
+        if (isAndroidQ || isDeprecatedVersion) {
              return hasLegacyAuthMechanism()
         } 
         
@@ -414,16 +411,26 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
     }
 
 
-    private fun authenticateWithLegacyApi(
+    private fun auth(
         cipher: Cipher?,
         promptInfo: AndroidPromptInfo,
         options: InitOptions,
         onSuccess: (cipher: Cipher?) -> Unit,
+        onError: ErrorCallback) {
+            if (isAndroidQ || isDeprecatedVersion && hasLegacyAuthMechanism()) {
+                authenticateWithLegacyApi(cipher, promptInfo, onSuccess, onError)    
+            } else {
+                authenticate(cipher, promptInfo, options,onSuccess, onError)
+            }  
+    }
+
+    private fun authenticateWithLegacyApi(
+        cipher: Cipher?,
+        promptInfo: AndroidPromptInfo,
+        onSuccess: (cipher: Cipher?) -> Unit,
         onError: ErrorCallback
     ) {
-        val keyguardManager = attachedActivity?.getSystemService(KeyguardManager::class.java)
-        val intent = keyguardManager.createConfirmDeviceCredentialIntent(promptInfo.title, promptInfo.subtitle)
-        attachedActivity?.startActivityForResult(intent, REQUEST_CODE)
+        legayHandler.authenticate(onSuccess, onError, cipher, promptInfo)
     }
 
     private fun authenticate(
