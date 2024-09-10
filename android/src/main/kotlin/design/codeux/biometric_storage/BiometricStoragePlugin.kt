@@ -96,7 +96,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         const val PARAM_NAME = "name"
         const val PARAM_WRITE_CONTENT = "content"
         const val PARAM_ANDROID_PROMPT_INFO = "androidPromptInfo"
-
+        const val REQUEST_CODE = 1001
     }
 
     private var attachedActivity: FragmentActivity? = null
@@ -109,6 +109,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     private lateinit var channel: MethodChannel
     private lateinit var logger: CustomLogger
+    private lateinit var legayHandler: LegacyHandler
 
     private val isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
     private val isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
@@ -309,6 +310,14 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        deviceAuthManager.handleAuthenticationResult(requestCode, resultCode, {
+            // Success
+        }, {
+            // Failure
+        })}
+
     private fun resetStorage() {
         storageFiles.values.forEach { it.deleteFile() }
         storageFiles.clear()
@@ -368,22 +377,53 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     private fun hasAuthMechanism(): Boolean {
         logger.trace("hasAuthMechanism()")
-        val result = when {
-            isAndroidQ -> biometricManager.canAuthenticate()
-            isDeprecatedVersion -> BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
-            else -> biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
-        }
-
+        if (isAndroidQ || isDeprecatedVersion){
+             return hasLegacyAuthMechanism()
+        } 
+        
+        val result = biometricManager.canAuthenticate(BIOMETRIC_STRONG or DEVICE_CREDENTIAL)
+        
         logger.trace("hasAuthMechanism() result $result")
-
+        
         val response = CanAuthenticateResponse.values().firstOrNull { it.code == result }
-
+        
         logger.trace("hasAuthMechanism() response $response")
-
+        
         val isSuccess = response?.code == BiometricManager.BIOMETRIC_SUCCESS
         logger.trace("hasAuthMechanism() response is success $isSuccess")
+        
+        return isSuccess   
+    }
 
-        return isSuccess
+    private fun hasLegacyAuthMechanism(): Boolean {
+        val legacyAuthResp = when {
+            isAndroidQ -> biometricManager.canAuthenticate()
+            else -> BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED
+        }
+        
+        logger.trace("hasAuthMechanism() authentication response is $legacyAuthResp")
+
+        if (legacyAuthResp != BiometricManager.BIOMETRIC_SUCCESS) {
+            logger.trace("hasAuthMechanism() authentication response not success. Checking keyguardManager isDeviceSecure")
+            val keyguardManager = attachedActivity?.getSystemService(KeyguardManager::class.java)
+            val isDeviceSecure = keyguardManager?.isDeviceSecure() ?: false;
+            logger.trace("hasAuthMechanism() keyguardManager isDeviceSecure: $isDeviceSecure")
+            return isDeviceSecure;
+        }
+        return true;
+    }
+
+
+    private fun authenticateWithLegacyApi(
+        cipher: Cipher?,
+        promptInfo: AndroidPromptInfo,
+        options: InitOptions,
+        onSuccess: (cipher: Cipher?) -> Unit,
+        onError: ErrorCallback
+    ) {
+        val keyguardManager = attachedActivity?.getSystemService(KeyguardManager::class.java)
+        val intent = keyguardManager.createConfirmDeviceCredentialIntent(promptInfo.title, promptInfo.subtitle)
+        attachedActivity?.startActivityForResult(intent, REQUEST_CODE)
     }
 
     private fun authenticate(
@@ -477,6 +517,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
             return
         }
         attachedActivity = activity
+        legayHandler = LegacyHandler()
     }
 
     override fun onDetachedFromActivityForConfigChanges() {
