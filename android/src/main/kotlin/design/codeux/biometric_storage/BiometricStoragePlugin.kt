@@ -109,7 +109,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler {
 
     private lateinit var channel: MethodChannel
     private lateinit var logger: CustomLogger
-    private val legayHandler by lazy { LegacyHandler(applicationContext, attachedActivity!) }
+    private val legayHandler by lazy { LegacyHandler(applicationContext, attachedActivity!!) }
 
     private val isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
     private val isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
