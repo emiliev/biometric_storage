@@ -94,11 +94,9 @@ class BiometricStorageFile(
             return
         } catch (ex: IOException) {
             // Error occurred opening file for writing.
-            ex.printStackTrace()
             customLogger.error(ex.message!!)
             throw ex
         } catch (e: Exception) { 
-            e.printStackTrace()
             customLogger.error(e.message!!)
         }
     }
