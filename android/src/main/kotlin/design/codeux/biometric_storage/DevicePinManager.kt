@@ -7,7 +7,10 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import javax.crypto.Cipher
 
-class DevicePinManager(private val activity: Activity) {
+class DevicePinManager(
+    private val activity: Activity,
+    private val logger: CustomLogger
+    ) {
 
     private val REQUEST_CODE = 1001
     private val keyguardManager = activity.getSystemService(KeyguardManager::class.java)
@@ -18,13 +21,9 @@ class DevicePinManager(private val activity: Activity) {
                      onFailure: () -> Unit,
                      promptInfo: AndroidPromptInfo
     ) {
-        if (keyguardManager.isKeyguardSecure) {
-            val intent = keyguardManager.createConfirmDeviceCredentialIntent(
-                    promptInfo.title, promptInfo.subtitle)
-            activity.startActivityForResult(intent, REQUEST_CODE)
-        } else {
-            onFailure()
-        }
+        logger.trace("DevicePinManager.authenticate()")
+        val intent = keyguardManager.createConfirmDeviceCredentialIntent(promptInfo.title, promptInfo.subtitle)
+        activity.startActivityForResult(intent, REQUEST_CODE)
         this.onSuccess = onSuccess
         this.onFailure = onFailure
     }

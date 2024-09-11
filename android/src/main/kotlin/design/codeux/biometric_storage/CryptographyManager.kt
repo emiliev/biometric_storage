@@ -122,7 +122,6 @@ class CryptographyManagerImpl(
         assert(bytesWritten == input.size + TAG_SIZE_IN_BYTES)
         assert(cipher.iv.size == IV_SIZE_IN_BYTES)
         logger.debug { "encrypted ${input.size} (${ciphertext.size} output)" }
-//        val ciphertext = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
         return EncryptedData(ciphertext)
     }
 
@@ -159,6 +158,7 @@ class CryptographyManagerImpl(
         keyStore.getKey(realKeyName, null)?.let { return it as SecretKey }
 
         // if you reach here, then a new SecretKey must be generated for that keyName
+       
         val paramsBuilder = KeyGenParameterSpec.Builder(
             realKeyName,
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT

@@ -116,8 +116,8 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
 
     private lateinit var channel: MethodChannel
     private lateinit var logger: CustomLogger
-    private val legacyHandler: LegacyHandler by lazy { LegacyHandler(applicationContext, attachedActivity!!) }
 
+    private val legacyHandler: LegacyHandler by lazy { LegacyHandler(applicationContext, attachedActivity!!, logger) }
     private val isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
     private val isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
 
@@ -196,7 +196,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
                     cipherForMode()
                 }
 
-               if (cipher == null && options.androidBiometricOnly) {
+                if (cipher == null && options.androidBiometricOnly) {
                    // if we have no cipher, just try the callback and see if the
                    // user requires authentication.
                    try {
@@ -293,7 +293,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
 
                 "write" -> withStorage {
                     withAuth(CipherMode.Encrypt) {
-                        writeFile(it, requiredArgument(PARAM_WRITE_CONTENT))
+                        writeFile(it, requiredArgument(PARAM_WRITE_CONTENT), logger)
                         ui(resultError) { result.success(true) }
                     }
                 }
@@ -318,6 +318,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
+        logger.trace("onActivityResult, resultCode=${resultCode}");
         legacyHandler.handleAuthenticationResult(requestCode, resultCode)
         return true
     }
@@ -424,6 +425,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
         onSuccess: (cipher: Cipher?) -> Unit,
         onError: ErrorCallback) {
             if (isAndroidQ || isDeprecatedVersion && hasLegacyAuthMechanism()) {
+                logger.trace("authenticate with legacy api")
                 authenticateWithLegacyApi(cipher, promptInfo, onSuccess, onError)    
             } else {
                 authenticate(cipher, promptInfo, options,onSuccess, onError)
@@ -436,7 +438,8 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
         onSuccess: (cipher: Cipher?) -> Unit,
         onError: ErrorCallback
     ) {
-        legacyHandler.authenticate(onSuccess,
+        legacyHandler.authenticate(
+            onSuccess,
             { error -> onError(AuthenticationErrorInfo(AuthenticationError.Failed, error)) },
             cipher,
             promptInfo
@@ -521,10 +524,12 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
     }
 
     override fun onReattachedToActivityForConfigChanges(binding: ActivityPluginBinding) {
+        binding.addActivityResultListener(this)
     }
 
     override fun onAttachedToActivity(binding: ActivityPluginBinding) {
         logger.debug("Attached to new activity.")
+        binding.addActivityResultListener(this)
         updateAttachedActivity(binding.activity)
     }
 

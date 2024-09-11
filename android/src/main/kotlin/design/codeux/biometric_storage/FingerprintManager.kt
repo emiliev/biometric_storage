@@ -8,6 +8,7 @@ import javax.crypto.Cipher
 
 class FingerprintManager(
         private val context: Context,
+        private val logger: CustomLogger
 ) {
 
     private var cancellationSignal: CancellationSignal? = null
@@ -21,7 +22,10 @@ class FingerprintManager(
             fingerprintManager = FingerprintManagerCompat.from(context)
             cancellationSignal = CancellationSignal()
 
-            if (fingerprintManager.isHardwareDetected && fingerprintManager.hasEnrolledFingerprints()) {
+            val hasEnrolledFingerpint = fingerprintManager.hasEnrolledFingerprints()
+            logger.trace("FingerprintManager.authenticate - hasEnrolledFingerprints - ${hasEnrolledFingerpint}");
+
+            if (hasEnrolledFingerpint) {
                 val cryptoObject = FingerprintManagerCompat.CryptoObject(cipher!!)
                 fingerprintManager.authenticate(
                         cryptoObject,
@@ -45,6 +49,9 @@ class FingerprintManager(
                         },
                         null
                 )
+            } else {
+                logger.trace("FingerprintManager.authenticate - no fingerprint found, fallback to device pin");
+                onFailure("No enrolled fingerprints on device")
             }
         }
 
