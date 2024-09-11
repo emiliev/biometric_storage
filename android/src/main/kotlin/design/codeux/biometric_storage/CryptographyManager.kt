@@ -158,7 +158,6 @@ class CryptographyManagerImpl(
         keyStore.getKey(realKeyName, null)?.let { return it as SecretKey }
 
         // if you reach here, then a new SecretKey must be generated for that keyName
-       
         val paramsBuilder = KeyGenParameterSpec.Builder(
             realKeyName,
             KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
@@ -167,7 +166,6 @@ class CryptographyManagerImpl(
             setBlockModes(ENCRYPTION_BLOCK_MODE)
             setEncryptionPaddings(ENCRYPTION_PADDING)
             setKeySize(KEY_SIZE)
-            setUserAuthenticationRequired(true)
             configure()
         }
 

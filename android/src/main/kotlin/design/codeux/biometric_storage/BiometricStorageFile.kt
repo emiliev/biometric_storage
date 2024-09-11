@@ -43,20 +43,20 @@ class BiometricStorageFile(
                 setIsStrongBoxBacked(useStrongBox)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            setUserAuthenticationRequired(options.authenticationRequired)
-            if (options.androidBiometricOnly) {
-                setUserAuthenticationParameters(
-                    0,
-                    KeyProperties.AUTH_BIOMETRIC_STRONG
-                )
-            } else {
-                setUserAuthenticationParameters(
-                    0,
-                    KeyProperties.AUTH_DEVICE_CREDENTIAL or KeyProperties.AUTH_BIOMETRIC_STRONG
-                )
-            }
+                setUserAuthenticationRequired(options.authenticationRequired)
+                if (options.androidBiometricOnly) {
+                    setUserAuthenticationParameters(
+                        0,
+                        KeyProperties.AUTH_BIOMETRIC_STRONG
+                    )
+                } else {
+                    setUserAuthenticationParameters(
+                        0,
+                        KeyProperties.AUTH_DEVICE_CREDENTIAL or KeyProperties.AUTH_BIOMETRIC_STRONG
+                    )
+                }
         } else {
-            setUserAuthenticationValidityDurationSeconds(options.authenticationValidityDurationSeconds)
+            setUserAuthenticationValidityDurationSeconds(5)
         }
     }
 
@@ -96,9 +96,7 @@ class BiometricStorageFile(
             // Error occurred opening file for writing.
             customLogger.error(ex.message!!)
             throw ex
-        } catch (e: Exception) { 
-            customLogger.error(e.message!!)
-        }
+        } 
     }
 
     @Synchronized
