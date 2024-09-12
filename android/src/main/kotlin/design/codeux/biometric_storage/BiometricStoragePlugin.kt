@@ -117,7 +117,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
     private lateinit var channel: MethodChannel
     private lateinit var logger: CustomLogger
 
-    private val legacyHandler: LegacyHandler by lazy { LegacyHandler(applicationContext, attachedActivity!!, logger) }
+    private val authenticationHandler: AuthenticationHandler by lazy { AuthenticationHandler(applicationContext, attachedActivity!!, logger) }
     private val isAndroidQ = Build.VERSION.SDK_INT == Build.VERSION_CODES.Q
     private val isDeprecatedVersion = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q
 
@@ -319,7 +319,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
         logger.trace("onActivityResult, resultCode=${resultCode}");
-        legacyHandler.handleAuthenticationResult(requestCode, resultCode)
+        authenticationHandler.handleAuthenticationResult(requestCode, resultCode)
         return true
     }
 
@@ -423,99 +423,9 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
         promptInfo: AndroidPromptInfo,
         options: InitOptions,
         onSuccess: (cipher: Cipher?) -> Unit,
-        onError: ErrorCallback) {
-            if (isAndroidQ || isDeprecatedVersion && hasLegacyAuthMechanism()) {
-                logger.trace("authenticate with legacy api")
-                authenticateWithLegacyApi(cipher, promptInfo, onSuccess, onError)    
-            } else {
-                authenticate(cipher, promptInfo, options,onSuccess, onError)
-            }  
-    }
-
-    private fun authenticateWithLegacyApi(
-        cipher: Cipher?,
-        promptInfo: AndroidPromptInfo,
-        onSuccess: (cipher: Cipher?) -> Unit,
         onError: ErrorCallback
-    ) {
-        legacyHandler.authenticate(
-            onSuccess,
-            { error -> onError(AuthenticationErrorInfo(AuthenticationError.Failed, error)) },
-            cipher,
-            promptInfo
-        )
-    }
-
-    private fun authenticate(
-        cipher: Cipher?,
-        promptInfo: AndroidPromptInfo,
-        options: InitOptions,
-        onSuccess: (cipher: Cipher?) -> Unit,
-        onError: ErrorCallback
-    ) {
-        logger.trace("authenticate()")
-        val activity = attachedActivity ?: return run {
-            logger.error("We are not attached to an activity.")
-            onError(
-                AuthenticationErrorInfo(
-                    AuthenticationError.Failed,
-                    "Plugin not attached to any activity."
-                )
-            )
-        }
-        val prompt =
-            BiometricPrompt(activity, object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    logger.trace("onAuthenticationError($errorCode, $errString)")
-                    ui(onError) {
-                        onError(
-                            AuthenticationErrorInfo(
-                                AuthenticationError.forCode(
-                                    errorCode
-                                ), errString
-                            )
-                        )
-                    }
-                }
-
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    logger.trace("onAuthenticationSucceeded($result)")
-                    worker(onError) { onSuccess(result.cryptoObject?.cipher) }
-                }
-
-                override fun onAuthenticationFailed() {
-                    logger.trace("onAuthenticationFailed()")
-                    // this just means the user was not recognised, but the O/S will handle feedback so we don't have to
-                }
-            })
-
-        val promptBuilder = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(promptInfo.title)
-            .setSubtitle(promptInfo.subtitle)
-            .setDescription(promptInfo.description)
-            .setConfirmationRequired(promptInfo.confirmationRequired)
-
-        val biometricOnly =
-                options.androidBiometricOnly || Build.VERSION.SDK_INT < Build.VERSION_CODES.R
-
-        if (biometricOnly) {
-            promptBuilder.apply {
-                setAllowedAuthenticators(BIOMETRIC_STRONG)
-                setNegativeButtonText(promptInfo.negativeButton)
-            }
-        } else if (isDeprecatedVersion) {
-            // Do nothing
-        } else {
-            promptBuilder.setAllowedAuthenticators(DEVICE_CREDENTIAL or BIOMETRIC_STRONG)
-        }
-
-        if (cipher == null || options.authenticationValidityDurationSeconds >= 0) {
-            // if authenticationValidityDurationSeconds is not -1 we can't use a CryptoObject
-            logger.debug("Authenticating without cipher. ${options.authenticationValidityDurationSeconds}")
-            prompt.authenticate(promptBuilder.build())
-        } else {
-            prompt.authenticate(promptBuilder.build(), BiometricPrompt.CryptoObject(cipher))
-        }
+    ) {            
+        authenticationHandler.authenticate(onSuccess, onError, cipher, promptInfo, options)
     }
 
     override fun onDetachedFromActivity() {

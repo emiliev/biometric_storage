@@ -15,10 +15,10 @@ class DevicePinManager(
     private val REQUEST_CODE = 1001
     private val keyguardManager = activity.getSystemService(KeyguardManager::class.java)
     private lateinit var onSuccess: (cipher: Cipher?) -> Unit
-    private lateinit var onFailure: () -> Unit
+    private lateinit var onFailure: ErrorCallback
 
     fun authenticate(onSuccess: (cipher: Cipher?) -> Unit,
-                     onFailure: () -> Unit,
+                     onFailure: ErrorCallback,
                      promptInfo: AndroidPromptInfo
     ) {
         logger.trace("DevicePinManager.authenticate()")
@@ -33,7 +33,12 @@ class DevicePinManager(
             if (resultCode == Activity.RESULT_OK) {
                 this.onSuccess(null)
             } else {
-                this.onFailure()
+                this.onFailure(
+                    AuthenticationErrorInfo(
+                        AuthenticationError.ResetBiometrics,
+                        "Incorrect result code, resultCode = ${resultCode}",
+                    )
+                )
             }
         }
     }
