@@ -94,7 +94,7 @@ class BiometricStorageFile(
             return
         } catch (ex: IOException) {
             // Error occurred opening file for writing.
-            customLogger.error(ex.message!!)
+            customLogger.error(ex.toCompleteString())
             throw ex
         } 
     }
@@ -109,7 +109,7 @@ class BiometricStorageFile(
                 logger.debug { "read ${bytes.size}" }
                 cryptographyManager.decryptData(bytes, useCipher)
             } catch (ex: IOException) {
-                logger.error(ex) { "Error while writing encrypted file $fileV2" }
+                logger.error(ex.toCompleteString()) { "Error while writing encrypted file $fileV2" }
                 null
             }
         }

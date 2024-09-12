@@ -89,7 +89,7 @@ data class AuthenticationErrorInfo(
     ) : this(error, message, e.toCompleteString())
 }
 
-private fun Throwable.toCompleteString(): String {
+fun Throwable.toCompleteString(): String {
     val out = StringWriter().let { out ->
         printStackTrace(PrintWriter(out))
         out.toString()
@@ -311,14 +311,15 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
                 e.message,
                 e.toCompleteString()
             )
+            logger.error(e.toCompleteString())
         } catch (e: Exception) {
-            logger.error("Error while processing method call '${call.method}'")
+            logger.error("Error while processing method call '${call.method}'\n ${e.toCompleteString()}")
             result.error("Unexpected Error", e.message, e.toCompleteString())
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
-        if (requestCode != REQUEST_CODE { 
+        if (requestCode != REQUEST_CODE) { 
             return false
         }
 
