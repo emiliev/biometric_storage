@@ -46,16 +46,15 @@ class BiometricsManager(
             .setSubtitle(promptInfo.subtitle)
             .setDescription(promptInfo.description)
             .setConfirmationRequired(promptInfo.confirmationRequired)
-            .setNegativeButtonText(promptInfo.negativeButton)
 
         val biometricOnly = options.androidBiometricOnly
 
         if (biometricOnly) {
-            promptBuilder.apply {
-                setAllowedAuthenticators(BIOMETRIC_STRONG)
-            }
+            promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG)
         } else if (isAndroidROrAbove){
             promptBuilder.setAllowedAuthenticators(DEVICE_CREDENTIAL or BIOMETRIC_STRONG)
+        } else {
+            promptBuilder.setNegativeButtonText(promptInfo.negativeButton)
         }
 
         if (cipher == null || options.authenticationValidityDurationSeconds >= 0) {
