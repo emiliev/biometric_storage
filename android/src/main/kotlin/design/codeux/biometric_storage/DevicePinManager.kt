@@ -29,17 +29,15 @@ class DevicePinManager(
     }
 
     fun handleAuthenticationResult(requestCode: Int, resultCode: Int) {
-        if (requestCode == REQUEST_CODE) {
-            if (resultCode == Activity.RESULT_OK) {
-                this.onSuccess(null)
-            } else {
-                this.onFailure(
-                    AuthenticationErrorInfo(
-                        AuthenticationError.ResetBiometrics,
-                        "Incorrect result code, resultCode = ${resultCode}",
-                    )
+        if (resultCode == Activity.RESULT_OK) {
+            this.onSuccess(null)
+        } else {
+            this.onFailure(
+                AuthenticationErrorInfo(
+                    AuthenticationError.ResetBiometrics,
+                    "Incorrect result code, resultCode = ${resultCode}",
                 )
-            }
+            )
         }
     }
 }

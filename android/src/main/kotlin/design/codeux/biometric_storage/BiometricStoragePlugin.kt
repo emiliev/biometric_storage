@@ -318,6 +318,10 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean {
+        if (requestCode != REQUEST_CODE { 
+            return false
+        }
+
         logger.trace("onActivityResult, resultCode=${resultCode}");
         authenticationHandler.handleAuthenticationResult(requestCode, resultCode)
         return true
