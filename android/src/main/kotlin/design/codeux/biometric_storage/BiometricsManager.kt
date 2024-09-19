@@ -51,6 +51,7 @@ class BiometricsManager(
 
         if (biometricOnly) {
             promptBuilder.setAllowedAuthenticators(BIOMETRIC_STRONG)
+            promptBuilder.setNegativeButtonText(promptInfo.negativeButton)
         } else if (isAndroidROrAbove){
             promptBuilder.setAllowedAuthenticators(DEVICE_CREDENTIAL or BIOMETRIC_STRONG)
         } else {
