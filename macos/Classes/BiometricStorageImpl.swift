@@ -76,7 +76,7 @@ class BiometricStorageImpl {
     if ("canAuthenticate" == call.method) {
       canAuthenticate(result: result)
     } else if ("hasAuthMechanism" == call.method) {
-        canAuthenticate(biometricsOnly: false, result: result)
+        hasAuthMechanism(result: result)
     } else if ("init" == call.method) {
       requiredArg("name") { name in
         requiredArg("options") { options in
@@ -117,12 +117,27 @@ class BiometricStorageImpl {
       result(storageMethodNotImplemented)
     }
   }
-  
 
-  private func canAuthenticate(biometricsOnly: Bool = true,  result: @escaping StorageCallback) {
+  private func hasAuthMechanism(result: @escaping StorageCallback) {
+    hpdebug("hasAuthMechanism()")
     var error: NSError?
     let context = LAContext()
-    if context.canEvaluatePolicy(biometricsOnly ? .deviceOwnerAuthenticationWithBiometrics : .deviceOwnerAuthentication, error: &error) {
+    if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
+      hpdebug("hasAuthMechanism() true")
+      result(true)
+      return
+    }
+    
+    hpdebug("hasAuthMechanism() false \(String(describing: error?.localizedDescription))")
+    result(false)
+  }
+  
+  
+
+  private func canAuthenticate(result: @escaping StorageCallback) {
+    var error: NSError?
+    let context = LAContext()
+    if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
       result("Success")
       return
     }
