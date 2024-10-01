@@ -22,17 +22,17 @@ class DevicePinManager(
                      promptInfo: AndroidPromptInfo
     ) {
         logger.trace("DevicePinManager.authenticate()")
-        val intent = keyguardManager.createConfirmDeviceCredentialIntent(promptInfo.title, promptInfo.subtitle)
-        activity.startActivityForResult(intent, REQUEST_CODE)
         this.onSuccess = onSuccess
         this.onFailure = onFailure
+        val intent = keyguardManager.createConfirmDeviceCredentialIntent(promptInfo.title, promptInfo.subtitle)
+        activity.startActivityForResult(intent, REQUEST_CODE)
     }
 
     fun handleAuthenticationResult(requestCode: Int, resultCode: Int) {
         if (resultCode == Activity.RESULT_OK) {
-            this.onSuccess(null)
+            this.onSuccess?(null)
         } else {
-            this.onFailure(
+            this.onFailure?(
                 AuthenticationErrorInfo(
                     AuthenticationError.ResetBiometrics,
                     "Incorrect result code, resultCode = ${resultCode}",
