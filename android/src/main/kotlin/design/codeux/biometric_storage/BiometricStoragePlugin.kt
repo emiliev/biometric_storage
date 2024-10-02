@@ -112,6 +112,8 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
 
     private val biometricManager by lazy { BiometricManager.from(applicationContext) }
 
+    private val handler: Handler by lazy { Handler(Looper.getMainLooper()) }
+
     private lateinit var applicationContext: Context
 
     private lateinit var channel: MethodChannel
@@ -172,6 +174,7 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
 
             }
 
+            @UiThread
             fun BiometricStorageFile.withAuth(
                 mode: CipherMode,
                 cb: BiometricStorageFile.(cipher: Cipher?) -> Unit
@@ -333,10 +336,11 @@ class BiometricStoragePlugin : FlutterPlugin, ActivityAware, MethodCallHandler, 
         storageFiles.clear()
     }
 
+    @AnyThread
     private inline fun ui(
-        crossinline onError: ErrorCallback,
-        crossinline cb: () -> Unit
-    ) {
+        @UiThread crossinline onError: ErrorCallback,
+        @UiThread crossinline cb: () -> Unit
+    ) = handler.post {
         try {
             cb()
         } catch (e: Throwable) {
