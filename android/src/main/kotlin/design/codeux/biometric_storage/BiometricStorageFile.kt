@@ -51,7 +51,7 @@ class BiometricStorageFile(
                     )
                 } else {
                     setUserAuthenticationParameters(
-                        0,
+                        5,
                         KeyProperties.AUTH_DEVICE_CREDENTIAL or KeyProperties.AUTH_BIOMETRIC_STRONG
                     )
                 }
