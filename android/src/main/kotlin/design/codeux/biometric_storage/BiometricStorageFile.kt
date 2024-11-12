@@ -46,12 +46,12 @@ class BiometricStorageFile(
                 setUserAuthenticationRequired(options.authenticationRequired)
                 if (options.androidBiometricOnly) {
                     setUserAuthenticationParameters(
-                        0,
+                        5,
                         KeyProperties.AUTH_BIOMETRIC_STRONG
                     )
                 } else {
                     setUserAuthenticationParameters(
-                        0,
+                        5,
                         KeyProperties.AUTH_DEVICE_CREDENTIAL or KeyProperties.AUTH_BIOMETRIC_STRONG
                     )
                 }
