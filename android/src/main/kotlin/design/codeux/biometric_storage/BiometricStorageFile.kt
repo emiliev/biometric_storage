@@ -92,7 +92,7 @@ class BiometricStorageFile(
             logger.debug { "Successfully written ${encrypted.encryptedPayload.size} bytes." }
 
             return
-        } catch (ex: IOException) {
+        } catch (ex: Throwable) {
             // Error occurred opening file for writing.
             customLogger.error(ex.toCompleteString())
             throw ex
@@ -108,7 +108,7 @@ class BiometricStorageFile(
                 val bytes = fileV2.readBytes()
                 logger.debug { "read ${bytes.size}" }
                 cryptographyManager.decryptData(bytes, useCipher)
-            } catch (ex: IOException) {
+            } catch (ex: Throwable) {
                 logger.error(ex.toCompleteString()) { "Error while writing encrypted file $fileV2" }
                 null
             }
