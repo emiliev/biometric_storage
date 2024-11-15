@@ -37,9 +37,6 @@ class BiometricStorageFile(
 
     private val cryptographyManager = CryptographyManager {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val useStrongBox = context.packageManager.hasSystemFeature(
-                PackageManager.FEATURE_STRONGBOX_KEYSTORE
-                )
                 setIsStrongBoxBacked(false)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
