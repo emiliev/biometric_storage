@@ -37,10 +37,7 @@ class BiometricStorageFile(
 
     private val cryptographyManager = CryptographyManager {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val useStrongBox = context.packageManager.hasSystemFeature(
-                PackageManager.FEATURE_STRONGBOX_KEYSTORE
-                )
-                setIsStrongBoxBacked(useStrongBox)
+                setIsStrongBoxBacked(false)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 setUserAuthenticationRequired(options.authenticationRequired)
@@ -51,7 +48,7 @@ class BiometricStorageFile(
                     )
                 } else {
                     setUserAuthenticationParameters(
-                        5,
+                        0,
                         KeyProperties.AUTH_DEVICE_CREDENTIAL or KeyProperties.AUTH_BIOMETRIC_STRONG
                     )
                 }
