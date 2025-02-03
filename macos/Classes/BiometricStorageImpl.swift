@@ -187,7 +187,15 @@ class BiometricStorageFile {
     self.initOptions = initOptions
     self.storageError = storageError
   }
-  
+
+  private var bundleIdentifier: String {
+      guard let bundleIdentifier = Bundle.main.bundleIdentifier else {
+          return ""
+      }
+     
+      return bundleIdentifier
+  }
+
   private func baseQuery(_ result: @escaping StorageCallback) -> [String: Any]? {
     var query = [
       kSecClass as String: kSecClassGenericPassword,
@@ -203,6 +211,8 @@ class BiometricStorageFile {
       }
       query[kSecAttrAccessControl as String] = access
     }
+
+    query[kSecAttrAccessGroup as String] = "JQB6HVHL2J.\(bundleIdentifier).kc.group"
     return query
   }
   
