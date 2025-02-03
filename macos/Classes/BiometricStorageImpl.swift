@@ -203,6 +203,8 @@ class BiometricStorageFile {
       }
       query[kSecAttrAccessControl as String] = access
     }
+
+    query[kSecAttrAccessGroup] = "co.tide.tideplatform.uk.staging.kc.group"
     return query
   }
   
